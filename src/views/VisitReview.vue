@@ -1,3 +1,4 @@
+<script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -148,7 +149,6 @@ HEENT: Normocephalic, atraumatic. No sinus tenderness.</textarea>
             <div v-else class="text-center py-10 text-gray-500">
                 No transcript data found. Please complete a recording session.
             </div>
-          </div>
         </div>
 
         <!-- Sticky Audio Player -->
