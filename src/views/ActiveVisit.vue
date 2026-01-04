@@ -41,10 +41,11 @@ const initSpeechRecognition = () => {
     recognition.lang = language.value
 
     recognition.onresult = (event) => {
-      console.log('Speech result:', event.results);
+      console.log('Speech result event:', event); // Added log
       let interimTranscript = ''
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         if (event.results[i].isFinal) {
+          console.log('Final transcript:', event.results[i][0].transcript); // Added log
           transcript.value.push({
             speaker: 'Patient', 
             text: event.results[i][0].transcript,
@@ -55,6 +56,7 @@ const initSpeechRecognition = () => {
         }
       }
       currentTranscript.value = interimTranscript
+      console.log('Current interim transcript:', interimTranscript); // Added log
     }
 
     recognition.onerror = (event) => {
@@ -66,7 +68,9 @@ const initSpeechRecognition = () => {
     }
 
     recognition.onend = () => {
+        console.log('Speech recognition ended'); // Added log
         if (isRecording.value) {
+            console.log('Restarting speech recognition'); // Added log
             recognition.start();
         }
     }
@@ -79,6 +83,7 @@ const initSpeechRecognition = () => {
 
 const togglePause = () => {
   isRecording.value = !isRecording.value
+  console.log('Pause toggled. New state:', isRecording.value); // Added log
   if (isRecording.value) {
     recognition.start()
     startTimer()
@@ -95,22 +100,48 @@ const endVisit = async () => {
 
   // Compile full transcript
   const fullText = transcript.value.map(t => `${t.speaker} (${t.time}): ${t.text}`).join('\n')
+  
+  console.log('Ending visit. Compiled transcript:', fullText); // Added log
 
   try {
+    // Mock backend save for demo - BYPASSING DB
+    console.log('DEMO MODE: Bypassing backend save. Transcript:', fullText);
+    
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Store in session storage just in case we want to use it
+    sessionStorage.setItem('lastVisitTranscript', fullText);
+    
+    router.push('/visit-processing')
+    
+    /* 
+    // OLD BACKEND CALL - Commented out for demo
     // Send to backend
     const visitId = 'visit_' + Date.now() // temporary ID generation
-    await fetch(`http://localhost:3000/api/notes/visit/${visitId}/generate`, {
+    const payload = {
+        transcript: fullText,
+        language: language.value
+    };
+    console.log('Sending visit payload to backend:', payload); // Added log
+
+    const response = await fetch(`http://localhost:3000/api/notes/visit/${visitId}/generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        transcript: fullText,
-        language: language.value
-      })
+      body: JSON.stringify(payload)
     })
     
+    console.log('Backend response status:', response.status); // Added log
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    console.log('Backend response data:', data); // Added log
+    
     router.push('/visit-processing')
+    */
   } catch (error) {
     console.error('Failed to save visit', error)
     alert('Failed to save visit data')

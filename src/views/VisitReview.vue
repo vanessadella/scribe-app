@@ -1,7 +1,29 @@
-<script setup>
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+
+const transcriptSegments = ref([])
+
+onMounted(() => {
+    // Load demo data
+    const savedTranscript = sessionStorage.getItem('lastVisitTranscript')
+    if (savedTranscript) {
+        // Parse the string "Speaker (Time): Text"
+        const lines = savedTranscript.split('\n')
+        transcriptSegments.value = lines.map(line => {
+            const match = line.match(/^(.+) \((.+)\): (.+)$/)
+            if (match) {
+                return {
+                    speaker: match[1] === 'Patient' ? 'Patient' : 'Doctor', // Normalize for styling
+                    time: match[2],
+                    text: match[3]
+                }
+            }
+            return null
+        }).filter(item => item !== null)
+    }
+})
 
 const saveAndComplete = () => {
   // Ideally save data here
@@ -112,66 +134,19 @@ HEENT: Normocephalic, atraumatic. No sinus tenderness.</textarea>
 
         <!-- Interactive Transcript -->
         <div class="flex-1 overflow-y-auto p-6 scroll-smooth">
-          <div class="space-y-6">
-            <!-- Segment 1 -->
-            <div class="group flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 -mx-2 rounded-lg transition-colors cursor-pointer">
-              <div class="w-12 pt-1 flex-shrink-0">
-                <span class="text-xs font-mono text-gray-400">00:01</span>
-              </div>
-              <div class="flex-1">
-                <p class="text-xs font-bold text-primary mb-1">Dr. Smith</p>
-                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">Good morning, John. It's good to see you again. How are you feeling today?</p>
-              </div>
+            <div v-if="transcriptSegments.length > 0">
+               <div v-for="(segment, index) in transcriptSegments" :key="index" class="group flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 -mx-2 rounded-lg transition-colors cursor-pointer">
+                  <div class="w-12 pt-1 flex-shrink-0">
+                    <span class="text-xs font-mono text-gray-400">{{ segment.time }}</span>
+                  </div>
+                  <div class="flex-1">
+                    <p class="text-xs font-bold mb-1" :class="segment.speaker === 'Doctor' ? 'text-primary' : 'text-gray-600 dark:text-gray-400'">{{ segment.speaker }}</p>
+                    <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ segment.text }}</p>
+                  </div>
+                </div>
             </div>
-            <!-- Segment 2 -->
-            <div class="group flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 -mx-2 rounded-lg transition-colors cursor-pointer">
-              <div class="w-12 pt-1 flex-shrink-0">
-                <span class="text-xs font-mono text-gray-400">00:04</span>
-              </div>
-              <div class="flex-1">
-                <p class="text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">John Doe</p>
-                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">Ideally better, Doctor. I'm still having that headache we talked about on the phone.</p>
-              </div>
-            </div>
-            <!-- Segment 3 (Active) -->
-            <div class="group flex gap-4 bg-primary/5 dark:bg-primary/10 border-l-4 border-primary p-2 pl-3 -mx-2 rounded-r-lg cursor-pointer">
-              <div class="w-12 pt-1 flex-shrink-0">
-                <span class="text-xs font-mono text-primary font-bold">00:12</span>
-              </div>
-              <div class="flex-1">
-                <p class="text-xs font-bold text-primary mb-1">Dr. Smith</p>
-                <p class="text-sm text-gray-900 dark:text-white font-medium leading-relaxed">I see. Can you tell me a bit more about it? Where exactly is the pain located?</p>
-              </div>
-            </div>
-            <!-- Segment 4 -->
-            <div class="group flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 -mx-2 rounded-lg transition-colors cursor-pointer">
-              <div class="w-12 pt-1 flex-shrink-0">
-                <span class="text-xs font-mono text-gray-400">00:18</span>
-              </div>
-              <div class="flex-1">
-                <p class="text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">John Doe</p>
-                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">It's mostly right here in the front, like behind my forehead. It just throbs. It's been about 3 days now constant.</p>
-              </div>
-            </div>
-            <!-- Segment 5 -->
-            <div class="group flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 -mx-2 rounded-lg transition-colors cursor-pointer">
-              <div class="w-12 pt-1 flex-shrink-0">
-                <span class="text-xs font-mono text-gray-400">00:26</span>
-              </div>
-              <div class="flex-1">
-                <p class="text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">Dr. Smith</p>
-                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">On a scale of 1 to 10, how bad would you say the pain is right now?</p>
-              </div>
-            </div>
-            <!-- Segment 6 -->
-            <div class="group flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 -mx-2 rounded-lg transition-colors cursor-pointer">
-              <div class="w-12 pt-1 flex-shrink-0">
-                <span class="text-xs font-mono text-gray-400">00:30</span>
-              </div>
-              <div class="flex-1">
-                <p class="text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">John Doe</p>
-                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">Probably a 6. It's distracting, hard to focus on work.</p>
-              </div>
+            <div v-else class="text-center py-10 text-gray-500">
+                No transcript data found. Please complete a recording session.
             </div>
           </div>
         </div>
